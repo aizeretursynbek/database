@@ -1,0 +1,142 @@
+// === 1. MAIN TABLES ===
+
+Table airports {
+  airport_id int [pk, increment]
+  airport_name varchar(255) [not null]
+  country varchar(100) [not null]
+  state varchar(100)
+  city varchar(100) [not null]
+  created_at datetime
+  updated_at datetime
+} // Partial participation
+
+Table airlines {
+  airline_id int [pk, increment]
+  airline_code varchar(10) [unique, not null]
+  name varchar(255) [not null]
+  country varchar(100) [not null]
+  created_at datetime
+  updated_at datetime
+} // Partial participation
+
+Table passengers {
+  passenger_id int [pk, increment]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  gender varchar(20)
+  date_of_birth date [not null]
+  country_of_citizenship varchar(100)
+  country_of_residence varchar(100)
+  passport_number varchar(50) [unique, not null]
+  created_at datetime
+  updated_at datetime
+} // Partial
+
+
+// === 2. OPERATIONAL TABLES ===
+
+Table flights {
+  flight_id int [pk, increment]
+  airline_id int [not null]
+  departure_airport_id int [not null]
+  arrival_airport_id int [not null]
+  departing_gate varchar(50)
+  arriving_gate varchar(50)
+  scheduled_departure_time datetime [not null]
+  scheduled_arrival_time datetime [not null]
+  actual_departure_time datetime
+  actual_arrival_time datetime
+  created_at datetime
+  updated_at datetime
+} // Total ; it depends directly from Airport and airline
+
+Table bookings {
+  booking_id int [pk, increment]
+  flight_id int [not null]
+  passenger_id int [not null]
+  status varchar(50) [not null]
+  booking_platform varchar(100)
+  ticket_price decimal(10,2) [not null]
+  created_at datetime
+  updated_at datetime
+} // total, cant exist without flights and passangers
+
+
+// === 3. SUB-SYSTEMS ===
+
+Table booking_changes {
+  booking_change_id int [pk, increment]
+  booking_id int [not null]
+  created_at datetime
+  updated_at datetime
+} // total
+
+Table boarding_passes {
+  boarding_pass_id int [pk, increment]
+  booking_id int [unique, not null] // unique enforces 1:1
+  seat varchar(10) [not null]
+  boarding_time datetime [not null]
+  created_at datetime
+  updated_at datetime
+} // total
+
+Table baggage {
+  baggage_id int [pk, increment]
+  booking_id int [not null]
+  weight_in_kg decimal(5,2) [not null]
+  created_at datetime
+  updated_at datetime
+} // total
+
+Table baggage_checks {
+  baggage_checking_id int [pk, increment]
+  booking_id int [not null]
+  passenger_id int [not null]
+  check_results varchar(255) [not null]
+  created_at datetime
+  updated_at datetime
+} //total
+
+Table security_checks {
+  security_check_id int [pk, increment]
+  passenger_id int [not null]
+  check_results varchar(255) [not null]
+  created_at datetime
+  updated_at datetime
+} // total
+
+// rule: if there is a foreign key with [not null] criteria then this table is total participation. that means the table cant exist on ownself
+
+// 1. ONE-TO-ONE (1:1) RELATIONSHIPS
+// One booking has strictly one boarding pass
+Ref: bookings.booking_id - boarding_passes.booking_id 
+
+
+// 2. LOGICAL MANY-TO-MANY (M:N) RELATIONSHIP
+// Passengers and Flights are linked Many-to-Many via Bookings
+Ref: passengers.passenger_id <> flights.flight_id 
+// or if we decide to build a relation through another table
+// Ref: flights.flight_id < bookings.flight_id
+// Ref: passengers.passenger_id < bookings.passenger_id
+
+// 3. ONE-TO-MANY (1:N) RELATIONSHIPS
+// One airline handles many flights
+Ref: airlines.airline_id < flights.airline_id
+
+// One airport handles many departures and arrivals
+Ref: airports.airport_id < flights.departure_airport_id
+Ref: airports.airport_id < flights.arrival_airport_id
+
+
+Ref: flights.flight_id < bookings.flight_id
+Ref: passengers.passenger_id < bookings.passenger_id
+
+
+//  processes from Bookings and Passengers
+Ref: bookings.booking_id < booking_changes.booking_id
+Ref: bookings.booking_id < baggage.booking_id
+Ref: bookings.booking_id < baggage_checks.booking_id
+Ref: passengers.passenger_id < baggage_checks.passenger_id
+Ref: passengers.passenger_id < security_checks.passenger_id
+
+
